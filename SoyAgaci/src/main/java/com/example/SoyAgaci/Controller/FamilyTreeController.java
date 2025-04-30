@@ -46,6 +46,6 @@ public class FamilyTreeController {
     // Tüm ağacı getirme (Basit bir JSON döngüsü)
     @GetMapping("/tree")
     public Map<Integer, Person> getFullTree() {
-        return familyTreeService.getPeopleById(); // Not: Service'te getPeopleById() eklenmeli!
+        return familyTreeService.getPeopleById();
     }
 }
