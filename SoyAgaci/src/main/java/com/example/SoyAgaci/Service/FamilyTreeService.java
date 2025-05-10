@@ -1,99 +1,105 @@
 package com.example.SoyAgaci.Service;
 
 import org.springframework.stereotype.Service;
+import com.example.SoyAgaci.entities.IPerson;
 import com.example.SoyAgaci.entities.Person;
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
 public class FamilyTreeService {
-    private Person root;  // Soy ağacının kök düğümü
-    private Map<Integer, Person> peopleById;
+    private IPerson root;
+    private Map<Integer, IPerson> peopleById;
 
     public FamilyTreeService() {
         peopleById = new HashMap<>();
     }
 
-    // Kök kişi oluşturma
     public void createRootPerson(int id, String name, String birthDate, String gender) {
         if (root != null) {
-            System.out.println("Root zaten oluşturulmuş.");
-            return;
+            throw new IllegalStateException("Root zaten oluşturulmuş.");
         }
         root = new Person(id, name, birthDate, gender);
         peopleById.put(id, root);
     }
 
-    // Eş ekleme
     public void addSpouse(int id, int spouseId, String name, String birthDate, String gender) {
-        Person person = peopleById.get(id);
-        if (person != null && person.getSpouse() == null) {
-            Person spouse = new Person(spouseId, name, birthDate, gender);
-            person.setSpouse(spouse);
-            spouse.setSpouse(person);
-            peopleById.put(spouseId, spouse);
-        } else {
-            System.out.println("Kişi bulunamadı veya zaten eşi var.");
+        IPerson person = peopleById.get(id);
+        if (person == null) {
+            throw new IllegalArgumentException("Kişi bulunamadı: ID " + id);
         }
+        if (person.getSpouse() != null) {
+            throw new IllegalStateException("Kişinin zaten bir eşi var: " + person.getSpouse().getName());
+        }
+        if (peopleById.containsKey(spouseId)) {
+            throw new IllegalArgumentException("Eş ID zaten mevcut: " + spouseId);
+        }
+
+        IPerson spouse = new Person(spouseId, name, birthDate, gender);
+        person.setSpouse(spouse);
+        spouse.setSpouse(person);
+        peopleById.put(spouseId, spouse);
     }
 
-    // Çocuk ekleme
     public void addChild(int parentId, int childId, String name, String birthDate, String gender) {
-        Person parent = peopleById.get(parentId);
-        if (parent != null) {
-            Person child = new Person(childId, name, birthDate, gender);
-            parent.addChild(child);
-            peopleById.put(childId, child);
+        IPerson parent = peopleById.get(parentId);
+        if (parent == null) {
+            throw new IllegalArgumentException("Ebeveyn bulunamadı: ID " + parentId);
         }
+        if (peopleById.containsKey(childId)) {
+            throw new IllegalArgumentException("Çocuk ID zaten mevcut: " + childId);
+        }
+
+        IPerson child = new Person(childId, name, birthDate, gender);
+        parent.addChild(child);
+        if (parent.getSpouse() != null) {
+            parent.getSpouse().addChild(child);
+        }
+        peopleById.put(childId, child);
     }
 
-
-    public Map<Integer, Person> getPeopleById() {
+    public Map<Integer, IPerson> getPeopleById() {
         return peopleById;
     }
 
-
-    // Soy ağacını yazdırma (pre-order traversal)
-    public void printTree() {
-        printTreeRecursive(root, 0);
+    public String printTree() {
+        StringBuilder treeOutput = new StringBuilder();
+        printTreeRecursive(root, 0, treeOutput);
+        return treeOutput.toString();
     }
 
-    // Ağaçta gezinme
-    private void printTreeRecursive(Person person, int level) {
+    private void printTreeRecursive(IPerson person, int level, StringBuilder output) {
         if (person == null) return;
 
-        System.out.println(" ".repeat(level * 4) + person.getName() + " (" + person.getGender() + ")");
+        output.append(" ".repeat(level * 4))
+                .append(person.getName())
+                .append(" (").append(person.getGender()).append(")\n");
         if (person.getSpouse() != null) {
-            System.out.println(" ".repeat(level * 4 + 2) + "Eşi: " + person.getSpouse().getName());
+            output.append(" ".repeat(level * 4 + 2))
+                    .append("Eşi: ").append(person.getSpouse().getName()).append("\n");
         }
 
-        for (Person child : person.getChildren()) {
-            printTreeRecursive(child, level + 1);
+        for (IPerson child : person.getChildren()) {
+            printTreeRecursive(child, level + 1, output);
         }
     }
+
     public void removePerson(int personId) {
-        Person toRemove = peopleById.get(personId);
+        IPerson toRemove = peopleById.get(personId);
         if (toRemove == null) {
-            System.out.println("Silinecek kişi bulunamadı.");
-            return;
+            throw new IllegalArgumentException("Silinecek kişi bulunamadı: ID " + personId);
         }
 
-        // Tüm kişiler içinde bu kişiyi çocuk listesinden kaldır
-        for (Person person : peopleById.values()) {
+        for (IPerson person : peopleById.values()) {
             person.getChildren().removeIf(child -> child.getId() == personId);
         }
 
-        // Spouse ilişkisini de kaldır
-        for (Person person : peopleById.values()) {
+        for (IPerson person : peopleById.values()) {
             if (person.getSpouse() != null && person.getSpouse().getId() == personId) {
                 person.setSpouse(null);
             }
         }
 
-        // Son olarak haritadan sil
         peopleById.remove(personId);
-        System.out.println("Kişi başarıyla silindi: " + toRemove.getName());
     }
-
-
 }

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class Person {
+public class Person implements IPerson {
     private int id;
     private String name;
     private String birthDate;
@@ -21,25 +21,43 @@ public class Person {
         this.children = new ArrayList<>();
     }
 
-    // Getter ve Setterlar
-    public int getId() { return id; }
-    public String getName() { return name; }
-    public String getBirthDate() { return birthDate; }
-    public String getGender() { return gender; }
-    public Person getSpouse() {
+    @Override
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getBirthDate() {
+        return birthDate;
+    }
+
+    @Override
+    public String getGender() {
+        return gender;
+    }
+
+    @Override
+    public IPerson getSpouse() {
         return spouse != null ? new Person(spouse.id, spouse.name, spouse.birthDate, spouse.gender) : null;
     }
 
-    public void setSpouse(Person spouse) {
-        this.spouse = spouse;
+    @Override
+    public void setSpouse(IPerson spouse) {
+        this.spouse = (Person) spouse;
     }
 
-    public void addChild(Person child) {
-        children.add(child);
+    @Override
+    public void addChild(IPerson child) {
+        children.add((Person) child);
     }
 
-    public List<Person> getChildren() {
-        return children;
+    @Override
+    public List<IPerson> getChildren() {
+        return new ArrayList<>(children);
     }
 }
-
